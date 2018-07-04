@@ -7,6 +7,7 @@ using namespace std;
 
 const vector<int> FULL_SET = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
+
 vector<vector<int>> v = {
 	{0,7,0,2,0,6,0,5,0},
 	{5,0,0,0,0,0,0,0,3},
@@ -51,111 +52,26 @@ void invert(vector<int> *vec){
 	*vec = copy;
 }
 
-class Sudoku {
-	private:
-		vector<vector<int>> board;
-	public:
-		Sudoku(){
-			for (int x = 0; x < 9; x++) {
-				vector<int> row;
-				for (int y = 0; y < 9; y++) {
-					int a;
-					cin >> a;
-					row.push_back(a);
-				}
-				board.push_back(row);
-			}
-		}
-		Sudoku(vector<vector<int>> b)
-			:board(b)
-		{
-		}
-		void print(){
-			string div = "+-------+-------+-------+";
-			cout << div << endl;
-			vector<vector<int>>::iterator iter = board.begin();
-			for (int x = 0; x < 3; x++){
-				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
-					iter->at(0), iter->at(1), iter->at(2), 
-					iter->at(3), iter->at(4), iter->at(5), 
-					iter->at(6), iter->at(7), iter->at(8));
-				iter++;
-			}
-			cout << div << endl;
-			for (int x = 0; x < 3; x++){
-				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
-					iter->at(0), iter->at(1), iter->at(2), 
-					iter->at(3), iter->at(4), iter->at(5), 
-					iter->at(6), iter->at(7), iter->at(8));
-				iter++;
-			}
-			cout << div << endl;
-			for (int x = 0; x < 3; x++){
-				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
-					iter->at(0), iter->at(1), iter->at(2), 
-					iter->at(3), iter->at(4), iter->at(5), 
-					iter->at(6), iter->at(7), iter->at(8));
-				iter++;
-			}
-			cout << div << endl;
-		}
-		vector<int> horizontal(int row){
-			vector<int> notPossible;
-			vector<int> r = board.at(row);
-			vector<int>::iterator iter = r.begin();
-			while (iter != r.end()){
-				if (*iter)
-					notPossible.push_back(*iter);
-				iter++;
-			}
-			invert(&notPossible);
-			return notPossible;
-		}
-		vector<int> vertical(int col){
-			vector<int> notPossible;
-			vector<vector<int>>::iterator iter = board.begin();
-			while (iter != board.end()){
-				vector<int> row = *iter;
-				int x = row.at(col);
-				if (x)
-					notPossible.push_back(x);
-				iter++;
-			}
-			invert(&notPossible);
-			return notPossible;
-		}
-		vector<int> section(int sec){
-			vector<int> notPossible;
-			for (int i = sec / 3; i < (sec / 3 + 3); i++){
-				vector<int> row = board.at(i);
-				for (int j = sec % 3 * 3; j < (sec % 3 * 3 + 3); j++){
-					int col = row.at(j);
-					if (col) {
-						notPossible.push_back(col);
-					}
-				}
-			}
-			invert(&notPossible);
-			return notPossible;
-		}
-			
-};
-
 class Box {
 	public:
 		Box(int n, int r, int c) 
 		: num(n), row(r), col(c)
 		{
+			possible = FULL_SET;
+			if (num)
+				solve = true;
 		}
 		//BASICALLY both() SO CHANGE THAT LATER
 		//Also, if only one possibility left, set it to the solution.
-		void updatePossible(vector<int> *other) {
-			vector<int>::iterator iter = possible.begin();
-			while (iter != possible.end()) {
-				if (!search(*iter, other))
-					iter = possible.erase(iter);
-				else
-					iter++;
+		void updatePossible(const vector<int> *other) {
+			if (!num){
+				vector<int>::iterator iter = possible.begin();
+				while (iter != possible.end()) {
+					if (!search(*iter, other))
+						iter = possible.erase(iter);
+					else
+						iter++;
+				}
 			}
 		}
 		int getNum(){
@@ -177,24 +93,217 @@ class Box {
 		vector<int> getPossible(){
 			return possible;
 		}
+		bool solved(){
+			return solve;
+		}
 	private:
 		int num;
 		int row, col;
 		vector<int> possible = FULL_SET;
+		bool solve = false;
 };
 
+class Sudoku {
+	private:
+		vector<vector<Box>> board;
+	public:
+		/*
+		Sudoku(){
+			for (int x = 0; x < 9; x++) {
+				vector<int> row;
+				for (int y = 0; y < 9; y++) {
+					int a;
+					cin >> a;
+					row.push_back(a);
+				}
+				board.push_back(row);
+			}
+		}
+		*/
+		Sudoku(vector<vector<int>> b)
+		{
+			vector<vector<Box>> temp;
+			vector<vector<int>>::iterator iter = b.begin();
+			int x=0, y=0;
+			while (iter != b.end()){
+				vector<Box> tempRow;
+				vector<int> row = *iter;
+				vector<int>::iterator iter2 = row.begin();
+				
+				while (iter2 != row.end()){
+					Box box(*iter2, x, y);
+					tempRow.push_back(box);
+					iter2++;
+					y++;
+				}
+				temp.push_back(tempRow);
+				iter++;
+				x++;
+				y = 0;
+			}
+			board = temp;
+					
+		}
+		void print(){
+			string div = "+-------+-------+-------+";
+			cout << div << endl;
+			vector<vector<Box>>::iterator iter = board.begin();
+			for (int x = 0; x < 3; x++){
+				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
+					iter->at(0).getNum(), iter->at(1).getNum(), iter->at(2).getNum(), 
+					iter->at(3).getNum(), iter->at(4).getNum(), iter->at(5).getNum(), 
+					iter->at(6).getNum(), iter->at(7).getNum(), iter->at(8).getNum());
+				iter++;
+			}
+			cout << div << endl;
+			for (int x = 0; x < 3; x++){
+				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
+					iter->at(0).getNum(), iter->at(1).getNum(), iter->at(2).getNum(), 
+					iter->at(3).getNum(), iter->at(4).getNum(), iter->at(5).getNum(), 
+					iter->at(6).getNum(), iter->at(7).getNum(), iter->at(8).getNum());
+				iter++;
+			}
+			cout << div << endl;
+			for (int x = 0; x < 3; x++){
+				printf("| %i %i %i | %i %i %i | %i %i %i |\n", 
+					iter->at(0).getNum(), iter->at(1).getNum(), iter->at(2).getNum(), 
+					iter->at(3).getNum(), iter->at(4).getNum(), iter->at(5).getNum(), 
+					iter->at(6).getNum(), iter->at(7).getNum(), iter->at(8).getNum());
+				iter++;
+			}
+			cout << div << endl;
+		}
+		vector<int> horizontalPossible(int row){
+			vector<int> notPossible;
+			vector<Box> r = board.at(row);
+			vector<Box>::iterator iter = r.begin();
+			while (iter != r.end()){
+				if (iter->getNum())
+					notPossible.push_back(iter->getNum());
+				iter++;
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+		vector<int> verticalPossible(int col){
+			vector<int> notPossible;
+			vector<vector<Box>>::iterator iter = board.begin();
+			while (iter != board.end()){
+				vector<Box> row = *iter;
+				Box x = row.at(col);
+				if (x.getNum())
+					notPossible.push_back(x.getNum());
+				iter++;
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+		vector<int> sectionPossible(int sec){
+			vector<int> notPossible;
+			for (int i = sec / 3; i < (sec / 3 + 3); i++){
+				vector<Box> row = board.at(i);
+				for (int j = sec % 3 * 3; j < (sec % 3 * 3 + 3); j++){
+					Box col = row.at(j);
+					if (col.getNum()) {
+						notPossible.push_back(col.getNum());
+					}
+				}
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+		void horizontalUpdate(int row, vector<int> possible){
+			/*
+			vector<Box> r = board.at(row);
+			vector<Box>::iterator iter = r.begin();
+			while (iter != r.end()){
+				iter->updatePossible(&possible);
+				iter++;
+			}
+			*/
+			for (int x = 0; x < 9; x++)
+				board.at(row).at(x).updatePossible(&possible);
+		}
+		void verticalUpdate(int col, vector<int> possible){
+			/*
+			vector<vector<Box>>::iterator iter = board.begin();
+			while (iter != board.end()){
+				vector<Box> row = *iter;
+				Box *x = &row.at(col);
+				x->updatePossible(&possible);
+				iter++;
+			}
+			*/
+			for (int x = 0; x < 9; x++)
+				board.at(x).at(col).updatePossible(&possible);
+		}
+		void sectionUpdate(int sec, vector<int> possible){
+			/*
+			for (int i = sec / 3; i < (sec / 3 + 3); i++){
+				vector<Box> row = board.at(i);
+				for (int j = sec % 3 * 3; j < (sec % 3 * 3 + 3); j++){
+					Box *col = &row.at(j);
+					col->updatePossible(&possible);
+				}
+			}
+			*/
+			for (int i = sec / 3; i < (sec / 3 + 3); i++)
+				for (int j = sec % 3 * 3; j < (sec % 3 * 3 + 3); j++)
+				       board.at(i).at(j).updatePossible(&possible);	
+		}
+		void possUpdate() {
+			vector<int> temp;
+			for (int x = 0; x < 9; x++) {
+				temp = horizontalPossible(x);
+				horizontalUpdate(x, temp);
+				temp = verticalPossible(x);
+				verticalUpdate(x, temp);
+				temp = sectionPossible(x);
+				sectionUpdate(x, temp);
+			}
+		}
+		vector<vector<Box>> retBoard() {
+			return board;
+		}
+			
+};
+
+void printVectorInt(vector<int> vec){
+	vector<int>::iterator iter = vec.begin();
+	while (iter != vec.end()) {
+		cout << *iter << " ";
+		iter++;
+	}
+	cout << endl;
+}
+
 int main() {
+	Box b(0, 0, 0);
+	b.printPossible();
+	vector<int> p = {1, 2, 3, 4, 5};
+	b.updatePossible(&p);
+	b.printPossible();
+	p = {4, 5, 6};
+	b.updatePossible(&p);
+	b.printPossible();
+
+	
 	Sudoku s(v);
 	s.print();
-	vector<int> h = s.section(2);
+	s.possUpdate();
+	printVectorInt(s.retBoard().at(5).at(1).getPossible());
+	printVectorInt(s.retBoard().at(5).at(8).getPossible());
 
+	/*
 	vector<int>::iterator iter = h.begin();
 	while (iter != h.end()) {
 		cout << *iter << " ";
 		iter++;
 	}
 	cout << endl;
+	*/
 /*
+
 	for (int i = 0; i < 9; i++) {
 		cout << i << " " << i / 3 * 3 << " " << i % 3 * 3 << endl;
 	}
