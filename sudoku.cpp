@@ -2,28 +2,53 @@
 #include <vector>
 #include <cstdio>
 #include <string>
+#include <cmath>
 using namespace std;
 
-vector<vector<int>> v = {
-	{1,2,3,4,5,6,7,8,9},
-	{2,3,4,5,6,7,8,9,1},
-	{3,4,5,6,7,8,9,1,2},
-	{4,5,6,7,8,9,1,2,3},
-	{5,6,7,8,9,1,2,3,4},
-	{6,7,8,9,1,2,3,4,5},
-	{7,8,9,1,2,3,4,5,6},
-	{8,9,1,2,3,4,5,6,7},
-	{9,1,2,3,4,5,6,7,8}};
+const vector<int> FULL_SET = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-bool search(int num, vector<int> *vec){
+vector<vector<int>> v = {
+	{0,7,0,2,0,6,0,5,0},
+	{5,0,0,0,0,0,0,0,3},
+	{0,4,0,0,0,0,0,9,0},
+	{0,0,2,0,1,0,8,0,0},
+	{0,1,0,0,0,0,0,2,0},
+	{0,0,6,0,4,0,5,0,0},
+	{0,9,0,0,0,0,0,7,0},
+	{2,0,0,0,0,0,0,0,9},
+	{0,5,0,4,0,7,0,1,0}};
+
+bool search(const int num, const vector<int> *vec){
 	bool inside = false;
-	for (vector<int>::iterator iter = vec->begin(); iter != vec->end(); iter++) {
+	for (vector<int>::const_iterator iter = vec->begin(); iter != vec->end(); iter++) {
 		if (*iter == num) {
 			inside = true;
 			break;
 		}
 	}
 	return inside;
+}
+
+void both(vector<int> *first, const vector<int> *other){
+	vector<int>::iterator iter = first->begin();
+	while (iter != first->end()) {
+		if (!search(*iter, other))
+			iter = first->erase(iter);
+		else
+			iter++;
+	}
+}
+
+void invert(vector<int> *vec){
+	vector<int> copy = FULL_SET;
+	vector<int>::iterator iter = copy.begin();
+	while (iter != copy.end()){
+		if (search(*iter, vec))
+			iter = copy.erase(iter);
+		else
+			iter++;
+	}
+	*vec = copy;
 }
 
 class Sudoku {
@@ -74,6 +99,46 @@ class Sudoku {
 			}
 			cout << div << endl;
 		}
+		vector<int> horizontal(int row){
+			vector<int> notPossible;
+			vector<int> r = board.at(row);
+			vector<int>::iterator iter = r.begin();
+			while (iter != r.end()){
+				if (*iter)
+					notPossible.push_back(*iter);
+				iter++;
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+		vector<int> vertical(int col){
+			vector<int> notPossible;
+			vector<vector<int>>::iterator iter = board.begin();
+			while (iter != board.end()){
+				vector<int> row = *iter;
+				int x = row.at(col);
+				if (x)
+					notPossible.push_back(x);
+				iter++;
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+		vector<int> section(int sec){
+			vector<int> notPossible;
+			for (int i = sec / 3; i < (sec / 3 + 3); i++){
+				vector<int> row = board.at(i);
+				for (int j = sec % 3 * 3; j < (sec % 3 * 3 + 3); j++){
+					int col = row.at(j);
+					if (col) {
+						notPossible.push_back(col);
+					}
+				}
+			}
+			invert(&notPossible);
+			return notPossible;
+		}
+			
 };
 
 class Box {
@@ -82,6 +147,8 @@ class Box {
 		: num(n), row(r), col(c)
 		{
 		}
+		//BASICALLY both() SO CHANGE THAT LATER
+		//Also, if only one possibility left, set it to the solution.
 		void updatePossible(vector<int> *other) {
 			vector<int>::iterator iter = possible.begin();
 			while (iter != possible.end()) {
@@ -113,12 +180,24 @@ class Box {
 	private:
 		int num;
 		int row, col;
-		vector<int> possible = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-
+		vector<int> possible = FULL_SET;
 };
 
 int main() {
 	Sudoku s(v);
 	s.print();
+	vector<int> h = s.section(2);
+
+	vector<int>::iterator iter = h.begin();
+	while (iter != h.end()) {
+		cout << *iter << " ";
+		iter++;
+	}
+	cout << endl;
+/*
+	for (int i = 0; i < 9; i++) {
+		cout << i << " " << i / 3 * 3 << " " << i % 3 * 3 << endl;
+	}
+*/	
 	return 0;
 }
